@@ -1,0 +1,8 @@
+Paso,Descripción,Filas,Nulos,Retención (%)
+01,Dataset original cargado,8160,753,100.0
+02,Eliminación de duplicados,8034,753,98.46
+03,Estandarización de categóricas,8034,513,98.46
+04,Limpieza de fechas,7250,177,88.85
+05,Limpieza de edades,7159,175,87.73
+06,Limpieza de minutos visualización,7091,0,86.9
+07,Limpieza de tickets de soporte,7067,0,86.61
