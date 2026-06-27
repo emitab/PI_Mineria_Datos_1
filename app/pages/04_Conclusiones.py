@@ -1,4 +1,6 @@
 import streamlit as st
+import pandas as pd
+import os
 
 st.set_page_config(page_title="Conclusiones", page_icon="📝", layout="wide")
 
@@ -6,112 +8,161 @@ st.title("📝 Conclusiones")
 st.markdown("Hallazgos del análisis, limitaciones del proyecto y próximos pasos.")
 st.markdown("---")
 
-# ── 1. Hallazgos ──────────────────────────────────────────────────────────────
-st.markdown("## 1. Hallazgos principales")
+# ── 1. Resumen del proceso ────────────────────────────────────────────────────
+st.markdown("## 1. Resumen del proceso")
+
+st.markdown("""
+Este proyecto analizó un dataset de usuarios de una plataforma de streaming
+que contenía 8.160 registros y 8 variables originales. A lo largo de cinco
+etapas se construyó un pipeline reproducible que va desde la inspección
+inicial hasta la reducción de dimensionalidad.
+
+El proceso siguió el siguiente orden:
+
+- **Inspección inicial**: se identificaron nulos en tres columnas, tipo de dato
+  incorrecto en `last_login_date`, valores imposibles en `age` y
+  `monthly_watch_time_mins`, y duplicados.
+- **Limpieza y preparación**: se tomaron decisiones justificadas por evidencia
+  en cada variable, conservando el dataset original intacto y registrando
+  cada transformación en el log ETL.
+- **EDA**: se respondieron cinco preguntas concretas sobre el comportamiento
+  de los usuarios mediante análisis univariado, bivariado y multivariado.
+- **PCA**: se aplicó reducción de dimensionalidad sobre las cuatro variables
+  numéricas, documentando el escalamiento, la varianza explicada y la
+  interpretación de los loadings.
+""")
+
+# ── 2. Hallazgos principales ──────────────────────────────────────────────────
+st.markdown("---")
+st.markdown("## 2. Hallazgos principales")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### Dataset y calidad")
+    st.markdown("### Sobre el perfil de los usuarios")
     st.markdown("""
-    El dataset original contenía 8.160 registros con 817 valores nulos distribuidos
-    en tres columnas, valores imposibles en variables numéricas (`age` negativa,
-    minutos fuera de rango) y formatos inconsistentes en fechas y categóricas.
-    Tras el pipeline de limpieza se conservaron 7.561 registros (92.66%),
-    con decisiones documentadas y justificadas en evidencia observada para cada transformación.
+    La base de usuarios es predominantemente adulta joven: el grupo con mayor
+    concentración se encuentra entre los 26 y 35 años, con una distribución
+    relativamente uniforme entre los 18 y 60 años y muy pocos usuarios en los
+    extremos. El plan básico es el más frecuente, representando aproximadamente
+    el 44% de la base, lo que indica que la mayor parte de los usuarios accede
+    al nivel de servicio más elemental.
     """)
 
-    st.markdown("### Perfil de la base de usuarios")
+    st.markdown("### Sobre el consumo según plan")
     st.markdown("""
-    La plataforma tiene una base de usuarios predominantemente adulta joven,
-    con mayor concentración en el rango de 26 a 35 años.
-    El plan básico es el más frecuente (≈44% de los usuarios),
-    lo que lo establece como referencia natural para comparaciones entre segmentos.
+    El análisis bivariado mostró que el consumo mensual de minutos crece
+    de forma consistente de básico a estándar y de estándar a premium.
+    Los usuarios premium presentan una mediana de minutos claramente superior
+    a los otros dos planes, lo que sugiere que el tipo de suscripción contratada
+    se refleja en el uso real de la plataforma. Sin embargo, la dispersión
+    dentro de cada plan es considerable, lo que indica que el plan no explica
+    por sí solo el comportamiento de visualización.
     """)
 
 with col2:
-    st.markdown("### Comportamiento por plan")
+    st.markdown("### Sobre tickets de soporte y actividad")
     st.markdown("""
-    El consumo mensual de minutos aumenta progresivamente del plan básico al premium,
-    lo que es consistente con la expectativa de que los usuarios que pagan más
-    utilizan más intensivamente la plataforma.
-    La dispersión también es mayor en los planes superiores,
-    indicando heterogeneidad dentro de esos segmentos.
+    La correlación de Pearson entre `customer_support_tickets` y
+    `days_since_last_login` fue de 0.004, prácticamente nula. El análisis
+    por grupos de tickets confirmó visualmente que las medianas de días sin
+    ingresar son similares entre usuarios sin tickets y usuarios con muchos.
+    La hipótesis de que una experiencia técnica negativa se asocia con el
+    abandono de la plataforma no encuentra respaldo en los datos disponibles.
     """)
 
-    st.markdown("### Relación tickets y actividad")
+    st.markdown("### Sobre la estructura del dataset")
     st.markdown("""
-    No se encontró relación entre la cantidad de tickets de soporte y los días
-    transcurridos desde el último ingreso (correlación de Pearson: 0.004).
-    Una experiencia técnica negativa no se asocia con alejamiento de la plataforma
-    en este dataset.
+    La matriz de correlación del EDA mostró coeficientes cercanos a cero entre
+    todas las variables numéricas. Este resultado fue confirmado por el PCA:
+    las cuatro componentes principales explican proporciones casi idénticas
+    de varianza (entre 24.6% y 25.4%), sin ningún codo visible en el scree plot.
+    Las variables describen dimensiones independientes del comportamiento del
+    usuario y no presentan redundancia entre sí.
     """)
 
-st.markdown("### Variables numéricas y PCA")
-st.markdown("""
-La matriz de correlación mostró coeficientes cercanos a cero entre todas las variables
-numéricas, indicando ausencia de relaciones lineales significativas.
-El análisis PCA confirmó este resultado: las cuatro componentes explican proporciones
-casi idénticas de varianza (≈25% cada una), sin ningún codo en la curva acumulada.
-La reducción de dimensionalidad no es efectiva en este dataset porque las variables
-describen aspectos independientes del comportamiento del usuario.
-El resultado relevante del PCA es la interpretación de los componentes: PC1 captura
-una dimensión de actividad e involucramiento, y PC2 una dimensión demográfica
-con fricción técnica.
-""")
-
-# ── 2. Limitaciones ───────────────────────────────────────────────────────────
+# ── 3. Interpretación del PCA ─────────────────────────────────────────────────
 st.markdown("---")
-st.markdown("## 2. Limitaciones")
+st.markdown("## 3. Interpretación del PCA")
 
 st.markdown("""
-- El alcance de las conclusiones se encuentra condicionado por la información disponible
-  y por las decisiones documentadas durante el proceso. El dataset no incluye variables
-  de contenido consumido, historial de navegación ni indicadores de satisfacción,
-  lo que limita la profundidad del análisis de comportamiento.
+PC1 puede interpretarse como una dimensión de actividad e involucramiento:
+valores bajos corresponden a usuarios más jóvenes con mayor consumo mensual,
+mientras que valores altos corresponden a usuarios con más tickets reportados
+y mayor tiempo sin ingresar. PC2 captura principalmente la oposición entre
+edad y tickets de soporte contra el consumo mensual.
 
-- La ausencia de correlaciones lineales entre variables numéricas puede deberse a la
-  naturaleza del dataset o a la presencia de relaciones no lineales que el análisis
-  descriptivo y PCA no capturan.
-
-- Los nulos en `favorite_genre` fueron etiquetados como `sin_definir` por no poder
-  distinguir entre dato no registrado y preferencia indefinida. Esto introduce
-  una categoría artificial que puede afectar análisis futuros sobre géneros.
-
-- El dataset no incluye información temporal longitudinal: cada registro es una
-  instantánea de un usuario en un momento dado, lo que impide analizar evolución
-  del comportamiento en el tiempo.
+El resultado más relevante del PCA no es la reducción de dimensionalidad
+en sí —que en este caso no es posible sin pérdida significativa—, sino
+la confirmación de que las cuatro variables aportan información
+independiente y complementaria sobre el usuario.
 """)
 
-# ── 3. Próximos pasos ─────────────────────────────────────────────────────────
+# Tabla resumen del proceso
+@st.cache_data
+def cargar_procesado():
+    path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "streaming_users_processed.json")
+    return pd.read_json(path)
+
+try:
+    df = cargar_procesado()
+    resumen = pd.DataFrame([
+        {"Etapa": "Dataset original",           "Filas": 8160, "Variables": 8},
+        {"Etapa": "Tras limpieza y preparación", "Filas": df.shape[0], "Variables": df.shape[1]},
+    ])
+    st.dataframe(resumen, use_container_width=True, hide_index=True)
+    eliminados = 8160 - df.shape[0]
+    st.caption(f"Registros eliminados durante la limpieza: {eliminados} ({eliminados/8160*100:.1f}%) · Variable derivada incorporada: days_since_last_login")
+except Exception:
+    pass
+
+# ── 4. Limitaciones ───────────────────────────────────────────────────────────
 st.markdown("---")
-st.markdown("## 3. Próximos pasos")
+st.markdown("## 4. Limitaciones")
 
 st.markdown("""
-- Incorporar variables adicionales que permitan caracterizar mejor el comportamiento
-  del usuario, como historial de contenido consumido o métricas de engagement detalladas.
+El alcance de las conclusiones se encuentra condicionado por la información
+disponible y por las decisiones documentadas durante el proceso.
 
-- Explorar técnicas de análisis no lineal (como t-SNE o UMAP) para identificar
-  estructuras en los datos que PCA no puede capturar por su linealidad.
-
-- Aplicar algoritmos de clustering (k-means, clustering jerárquico) sobre las
-  variables disponibles para identificar segmentos de usuarios con comportamiento similar,
-  lo que podría orientar estrategias de retención diferenciadas por perfil.
-
-- Analizar la variable `favorite_genre` con mayor detalle una vez resuelta
-  la ambigüedad de los valores faltantes, incorporando análisis de co-ocurrencia
-  entre género y plan de suscripción.
+- El dataset no incluye información sobre el contenido consumido, lo que
+  impide analizar si el género favorito declarado se corresponde con el
+  consumo real.
+- La variable `favorite_genre` presenta un 3% de registros etiquetados
+  como `sin_definir` por ambigüedad en el dato original, lo que limita
+  el análisis por preferencia de contenido.
+- La ausencia de una variable temporal que indique cuándo se registró
+  cada usuario impide analizar la evolución del comportamiento a lo largo
+  del tiempo.
+- Las correlaciones nulas entre variables numéricas limitan la capacidad
+  de PCA para resumir el dataset de forma compacta.
 """)
 
-# ── 4. Referencias ─────────────────────────────────────────────────────────────
+# ── 5. Mejoras futuras ────────────────────────────────────────────────────────
 st.markdown("---")
-st.markdown("## 4. Referencias del proyecto")
+st.markdown("## 5. Mejoras futuras")
+
+st.markdown("""
+- Una mejora futura podría consistir en incorporar datos de consumo
+  por género de contenido, lo que permitiría contrastar la preferencia
+  declarada con el comportamiento real de visualización.
+- Podría incorporarse una variable de fecha de registro para analizar
+  la retención de usuarios a lo largo del tiempo y detectar patrones
+  de abandono.
+- Un análisis de clustering sobre las componentes principales podría
+  complementar el PCA e identificar segmentos de usuarios con
+  comportamientos diferenciados, aun cuando las variables no presenten
+  correlación lineal entre sí.
+""")
+
+# ── 6. Referencias ─────────────────────────────────────────────────────────────
+st.markdown("---")
+st.markdown("## 6. Referencias del proyecto")
 
 col_r1, col_r2 = st.columns(2)
 with col_r1:
     st.markdown("""
     **Repositorio GitHub**
-    🔗 [Ver repositorio](https://github.com/)
+    🔗 [Ver repositorio](https://github.com/emitab/PI_Mineria_Datos_1)
 
     **Aplicación Streamlit Cloud**
     🔗 [Ver aplicación pública](https://streamlit.io/)

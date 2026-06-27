@@ -25,7 +25,6 @@ except Exception:
     st.error("No se encontró el dataset procesado en `data/processed/`.")
     st.stop()
 
-# Configuración visual coherente con los notebooks
 sns.set_theme(style="darkgrid")
 
 # Derivar columna grupo_edad si no existe
@@ -45,13 +44,28 @@ if "grupo_tickets" not in df.columns:
 # ── Preguntas de análisis ──────────────────────────────────────────────────────
 st.markdown("## Preguntas de análisis")
 st.markdown("""
-Este EDA busca responder cinco preguntas concretas sobre el comportamiento de los usuarios:
+Este EDA busca responder cinco preguntas concretas sobre el comportamiento
+de los usuarios de la plataforma de streaming:
 
 1. **¿Cómo se distribuye la edad de los usuarios?**
+   Permite entender si la base de usuarios es joven, adulta o mixta,
+   lo que condiciona cualquier decisión de segmentación posterior.
+
 2. **¿Qué plan de suscripción predomina en la plataforma?**
-3. **¿El plan de suscripción se refleja en el consumo real?**
-4. **¿Los usuarios con más tickets llevan más días sin ingresar?**
-5. **¿Qué relaciones existen entre las variables numéricas?**
+   Identificar el plan más frecuente es la base para comparaciones
+   por segmento en etapas posteriores.
+
+3. **¿El plan de suscripción se refleja en el consumo real de la plataforma?**
+   Analizamos si los usuarios premium efectivamente consumen más minutos
+   que los de planes básico o estándar.
+
+4. **¿Los usuarios con más tickets de soporte llevan más días sin ingresar?**
+   Exploramos si una experiencia técnica negativa se asocia con el
+   alejamiento del usuario de la plataforma.
+
+5. **¿Qué relaciones existen entre las variables numéricas del dataset?**
+   Un análisis de correlación entre edad, minutos, tickets y días sin
+   login permite identificar patrones globales y orienta las decisiones de PCA.
 """)
 st.markdown("---")
 
@@ -171,11 +185,13 @@ with col_t3:
     st.dataframe(resumen, use_container_width=True)
 
 st.markdown("""
-**Interpretación:** El consumo promedio de minutos aumenta progresivamente del plan básico
-al estándar y al premium. Los usuarios de planes superiores utilizan más la plataforma,
-lo que es consistente con la expectativa de que quienes pagan por un servicio más completo
-hacen un uso más intensivo del mismo. La dispersión también aumenta en los planes superiores,
-indicando mayor heterogeneidad en el comportamiento de esos segmentos.
+**Interpretación:** El análisis bivariado mostró que el consumo mensual de minutos crece
+de forma consistente de básico a estándar y de estándar a premium.
+Los usuarios premium presentan una mediana de minutos claramente superior
+a los otros dos planes, lo que sugiere que el tipo de suscripción contratada
+se refleja en el uso real de la plataforma. Sin embargo, la dispersión
+dentro de cada plan es considerable, lo que indica que el plan no explica
+por sí solo el comportamiento de visualización.
 """)
 st.markdown("---")
 
@@ -211,11 +227,12 @@ with col_t4:
     st.dataframe(tabla_tickets, use_container_width=True)
 
 st.markdown("""
-**Interpretación:** El coeficiente de correlación obtenido fue 0.004, indicando una relación
-prácticamente nula entre la cantidad de tickets de soporte y los días sin ingresar.
-Los boxplots por grupo confirman que las distribuciones de días sin login son similares
-entre usuarios con distintos niveles de tickets. Esto sugiere que una experiencia técnica
-negativa no se traduce necesariamente en alejamiento de la plataforma en este dataset.
+**Interpretación:** La correlación de Pearson entre `customer_support_tickets` y
+`days_since_last_login` fue prácticamente nula. El análisis
+por grupos de tickets confirmó visualmente que las medianas de días sin
+ingresar son similares entre usuarios sin tickets y usuarios con muchos.
+La hipótesis de que una experiencia técnica negativa se asocia con el
+abandono de la plataforma no encuentra respaldo en los datos disponibles.
 """)
 st.markdown("---")
 
@@ -242,10 +259,13 @@ with col_t5:
     st.dataframe(matriz_corr.round(4), use_container_width=True)
 
 st.markdown("""
-**Interpretación:** La matriz muestra coeficientes muy cercanos a cero entre todas las
-variables numéricas, indicando ausencia de relaciones lineales significativas.
-La edad, el tiempo de visualización, los tickets de soporte y los días desde el último
-acceso describen aspectos independientes del comportamiento del usuario.
+**Interpretación:** La matriz de correlación mostró coeficientes cercanos a cero entre
+todas las variables numéricas. Este resultado fue confirmado por el PCA:
+las cuatro componentes principales explican proporciones casi idénticas
+de varianza, sin ningún codo visible en el scree plot.
+Las variables describen dimensiones independientes del comportamiento del
+usuario y no presentan redundancia entre sí.
+
 Este resultado anticipa que PCA no podrá reducir la dimensionalidad de forma efectiva,
 ya que no existe redundancia entre las variables.
 """)

@@ -34,13 +34,17 @@ except Exception:
 # ── 1. Descripción general ────────────────────────────────────────────────────
 st.markdown("## 1. Descripción general")
 
-st.markdown("""
-El dataset contiene registros de usuarios de una plataforma de streaming.
-Cada fila representa un usuario único con información demográfica, de suscripción
-y de comportamiento dentro de la plataforma.
-""")
-
 st.markdown("### Diccionario de variables")
+st.markdown("""
+- `user_id` = identificador de usuario
+- `age` = edad
+- `subscription_plan` = plan de suscripcion
+- `monthly_watch_time_mins` = minutos vistos en el mes
+- `country` = pais
+- `favorite_genre` = genero favorito
+- `last_login_date` = fecha de ultimo inicio de sesion
+- `customer_support_tickets` = tickets de atencion al cliente
+""")
 
 diccionario = pd.DataFrame({
     "Variable": [
@@ -48,8 +52,8 @@ diccionario = pd.DataFrame({
         "country", "favorite_genre", "last_login_date", "customer_support_tickets"
     ],
     "Tipo original": [
-        "int", "float", "object", "float",
-        "object", "object", "object", "int"
+        "int64", "int64", "object", "float64",
+        "object", "object", "object", "int64"
     ],
     "Descripción": [
         "Identificador único de usuario",
@@ -62,12 +66,17 @@ diccionario = pd.DataFrame({
         "Cantidad de tickets de atención al cliente"
     ]
 })
-
 st.dataframe(diccionario, use_container_width=True, hide_index=True)
 
 # ── 2. Calidad inicial ─────────────────────────────────────────────────────────
 st.markdown("---")
 st.markdown("## 2. Calidad inicial")
+st.markdown("""
+Antes de aplicar cualquier transformación, inspeccionamos la estructura
+general del dataset: dimensiones, tipos de datos asignados automáticamente
+y presencia de valores nulos por columna. Esta revisión es la base de
+evidencia para todas las decisiones posteriores.
+""")
 
 if raw_ok:
     col1, col2, col3 = st.columns(3)
@@ -89,64 +98,108 @@ if raw_ok:
         st.dataframe(nulos, use_container_width=True, hide_index=True)
 
     st.info("""
-    **Observaciones iniciales:**
-    - Nulos en `monthly_watch_time_mins` (193), `favorite_genre` (240) y
-      `last_login_date` (384). Total: 817 valores faltantes.
-    - `last_login_date` está cargada como `object`, requiere conversión a `datetime`.
-    - Valores mínimos negativos en `age` y `monthly_watch_time_mins` (imposibles).
-    - Valores máximos fuera de rango en `age` y `monthly_watch_time_mins`.
+    **Interpretación:**
+    - 8160 filas, 8 columnas.
+    - En columnas `monthly_watch_time_mins` (193), `favorite_genre` (240) y `last_login_date` (384) hay presencia de datos nulos, sumando un total de 817.
+    - La columna `last_login_date` tiene un tipo de dato erróneo (está en object, debe ser date).
+    - Valor mínimo de `age` y `monthly_watch_time_mins` son negativos, cuando no es posible.
+    - Valor máximo de `age` y `monthly_watch_time_mins` tienen valores imposibles.
+    - Análisis de medidas se realizan luego del procesamiento y limpieza de la base de datos.
     """)
 else:
     st.warning("No se encontró el dataset original en `data/raw/`.")
 
 # ── 3. Pipeline de limpieza ────────────────────────────────────────────────────
 st.markdown("---")
-st.markdown("## 3. Principales transformaciones")
+st.markdown("## 3. Pipeline de limpieza")
 
-with st.expander("📌 Duplicados — eliminación directa"):
+with st.expander("📌 1. Duplicados — eliminación directa"):
     st.markdown("""
     Un registro idéntico en todas sus columnas no aporta información nueva.
     Se eliminaron directamente sin necesidad de criterio adicional.
     """)
 
-with st.expander("📌 Variables categóricas (subscription_plan, country, favorite_genre)"):
+with st.expander("📌 2. Estandarización de variables categóricas"):
     st.markdown("""
-    Se detectaron variantes inconsistentes: `Estándar / estandar / Std`, `Brasil / Brazil`, entre otros.
-    Se unificaron bajo una forma canónica en minúsculas sin tildes.
+    Se detectaron variantes inconsistentes en `subscription_plan` (Estándar / estandar / Std),
+    `country` (Brasil / Brazil / brasil) y `favorite_genre` (Acción / ACCIÓN / accion / Action).
+    Estas diferencias impiden cualquier agrupación o análisis por categoría.
+    Se unifican bajo una forma canónica en minúsculas sin tildes.
+    No se elimina ningún registro: los valores son válidos, solo están mal escritos.
 
-    Los nulos en `favorite_genre` se etiquetaron como `sin_definir` en lugar de imputar o eliminar,
-    porque no es posible distinguir si representan un dato no registrado o una preferencia indefinida.
+    Los nulos en `favorite_genre` son un caso especial: no podemos determinar si representan
+    un dato no registrado o una preferencia genuinamente indefinida del usuario.
+    Por eso se introduce la categoría explícita `sin_definir` en lugar de imputar
+    un género o eliminar el registro, preservando la información sobre la ausencia del dato.
+
+    Lo mismo aplica para `subscription_plan` y `country`: cualquier valor que no pueda
+    mapearse se etiqueta como `sin_definir` para no perder el registro.
     """)
 
-with st.expander("📌 Fechas (last_login_date)"):
+with st.expander("📌 3. Fechas (last_login_date)"):
     st.markdown("""
-    Se identificaron tres formatos mezclados (`YYYY-MM-DD`, `MM-DD-YYYY`, `YYYY/MM/DD`).
-    Se forzó conversión con `errors='coerce'` → fechas inválidas quedan como `NaT`.
+    La columna `last_login_date` presenta tres formatos mezclados (YYYY-MM-DD,
+    MM-DD-YYYY, YYYY/MM/DD) y fue cargada como `object`.
+    Se fuerza la conversión con `infer_datetime_format=True` y `errors="coerce"`,
+    lo que convierte automáticamente a `NaT` tanto los nulos originales como las
+    fechas inválidas (por ejemplo, mes 15).
 
-    - **Fechas futuras** → imposibles en el contexto real → eliminadas.
-    - **Nulos restantes** → sin criterio válido de imputación → eliminados.
-    - Se derivó `days_since_last_login` como variable numérica con mayor utilidad analítica.
+    Los registros con fecha futura son imposibles en el contexto real de la plataforma
+    y se eliminan. Los nulos restantes tampoco son recuperables: no existe criterio
+    válido para imputar una fecha de último acceso, por lo que esas filas se eliminan.
+
+    A partir de la fecha limpia se deriva `days_since_last_login`, variable numérica
+    con mayor utilidad analítica y candidata para PCA.
     """)
 
-with st.expander("📌 Edad (age)"):
+with st.expander("📌 4. Edad (age)"):
     st.markdown("""
-    Valores ≤ 0 y ≥ 120 son imposibles para usuarios reales.
-    Sin criterio válido de imputación → eliminados directamente.
+    Se detectaron valores de edad iguales a 0 y superiores a 120, ambos imposibles
+    para usuarios reales de una plataforma de streaming.
+    No existe criterio válido para imputar la edad de un usuario desconocido,
+    por lo que estos registros se eliminan directamente.
     """)
 
-with st.expander("📌 Minutos de visualización (monthly_watch_time_mins)"):
+with st.expander("📌 5. Minutos de visualización (monthly_watch_time_mins)"):
     st.markdown("""
-    - **Valores negativos** → físicamente imposibles → eliminados.
-    - **Valores > 43.200 min** (límite absoluto de un mes de 30 días × 24 hs × 60 min) → eliminados.
-    - **Outliers estadísticos válidos** (cercanos a 4.000 min) → conservados.
-    - **Nulos** → imputados con mediana agrupada por `subscription_plan`,
-      con mediana global como criterio de respaldo.
+    Se aplican tres criterios en orden.
+
+    Primero, valores negativos: un tiempo de visualización negativo es físicamente
+    imposible y no recuperable, se eliminan.
+
+    Segundo, valores superiores a 43.200 minutos (60 × 24 × 30): superan el límite
+    absoluto de un mes y se eliminan. Valores altos pero dentro del rango posible,
+    como los cercanos a 4.000 minutos (~68 horas/mes), son outliers estadísticos
+    pero no errores de dato y se conservan.
+
+    Tercero, para los nulos restantes se imputa con la mediana agrupada por
+    `subscription_plan`. Esta decisión se justifica porque el comportamiento de
+    visualización varía razonablemente según el plan contratado, y la mediana
+    es robusta frente a los outliers conservados. Si algún registro tiene
+    `subscription_plan` sin_definir y no puede agruparse correctamente,
+    se aplica la mediana global como segundo criterio.
     """)
 
-with st.expander("📌 Tickets de soporte (customer_support_tickets)"):
+with st.expander("📌 6. Tickets de soporte (customer_support_tickets)"):
     st.markdown("""
-    - **Valores negativos** → imposibles → eliminados.
-    - **Outlier de 99 tickets** → técnicamente posible para usuario con problemas recurrentes → conservado.
+    Se detectó un registro con 99 tickets de soporte, valor extremadamente alto
+    pero técnicamente posible para un usuario con problemas recurrentes.
+    No se elimina ni imputa: se conserva y se documenta como observación de
+    interés analítico.
+
+    Sin embargo, se detectaron también valores negativos, que son imposibles:
+    un ticket no puede tener cantidad negativa. Esos registros se eliminan.
+    """)
+
+with st.expander("📌 7. Estado final — guardado y log ETL"):
+    st.markdown("""
+    El dataset limpio se guarda en `data/processed/` preservando el original
+    intacto en `data/raw/`. El log ETL registra cada transformación con su
+    impacto en filas y nulos, permitiendo comparar el estado inicial y final.
+
+    Verificamos que el dataset resultante no tenga nulos sin resolver,
+    que los tipos de datos sean correctos y que las estadísticas
+    descriptivas sean coherentes con los rangos esperados.
     """)
 
 # ── 4. Log ETL ────────────────────────────────────────────────────────────────
@@ -166,12 +219,12 @@ except Exception:
             "Estandarización de categóricas",
             "Limpieza de fechas",
             "Limpieza de edades",
-            "Limpieza de minutos de visualización",
+            "Limpieza de minutos visualización",
             "Limpieza de tickets de soporte",
         ],
-        "Filas": [8160, 8135, 8135, 7741, 7662, 7598, 7561],
-        "Nulos": [817, 812, 428, 196, 193, 0, 0],
-        "Retención (%)": [100.0, 99.69, 99.69, 94.87, 93.87, 93.09, 92.66],
+        "Filas": [8160, 8034, 8034, 7250, 7159, 7091, 7067],
+        "Nulos": [753, 753, 513, 177, 175, 0, 0],
+        "Retención (%)": [100.0, 98.46, 98.46, 88.85, 87.73, 86.90, 86.61],
     }
     st.dataframe(pd.DataFrame(log_data), use_container_width=True, hide_index=True)
 

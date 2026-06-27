@@ -35,12 +35,12 @@ st.markdown("## 1. Variables utilizadas")
 
 st.markdown("""
 Se seleccionaron las cuatro variables numéricas continuas del dataset:
-`age`, `monthly_watch_time_mins`, `customer_support_tickets` y `days_since_last_login`.
-
-Estas variables describen dimensiones distintas del comportamiento del usuario:
-perfil demográfico, consumo, experiencia técnica y actividad reciente.
-Las variables categóricas (`subscription_plan`, `country`, `favorite_genre`)
-fueron excluidas porque PCA opera exclusivamente sobre variables numéricas.
+`age`, `monthly_watch_time_mins`, `customer_support_tickets` y
+`days_since_last_login`. Estas variables describen dimensiones distintas
+del comportamiento del usuario: perfil demográfico, consumo, experiencia
+técnica y actividad reciente. Las variables categóricas como
+`subscription_plan`, `country` y `favorite_genre` fueron excluidas
+porque PCA opera exclusivamente sobre variables numéricas.
 """)
 
 col1, col2 = st.columns(2)
@@ -62,14 +62,15 @@ st.markdown("---")
 st.markdown("## 2. Escalamiento — StandardScaler")
 
 st.markdown("""
-Antes de aplicar PCA es obligatorio escalar las variables.
-PCA es sensible a la magnitud de cada variable: sin escalar, `monthly_watch_time_mins`
-(que puede superar los 4.000 minutos) dominaría completamente el análisis sobre
-`customer_support_tickets` (que rara vez supera 5), simplemente por diferencia de escala
-y no por importancia real.
+Antes de aplicar PCA es obligatorio escalar las variables. PCA es
+sensible a la magnitud de cada variable: sin escalar, `monthly_watch_time_mins`
+(que puede superar los 4000 minutos) dominaría completamente el análisis
+sobre `customer_support_tickets` (que rara vez supera 5), simplemente
+por diferencia de escala y no por importancia real.
 
 Se aplica `StandardScaler`, que transforma cada variable para que tenga
-media 0 y desvío estándar 1, haciendo que todas contribuyan en igualdad de condiciones.
+media 0 y desvío estándar 1, haciendo que todas contribuyan en igualdad
+de condiciones al análisis.
 """)
 
 scaler = StandardScaler()
@@ -85,7 +86,14 @@ st.caption("Las medias son aproximadamente 0 y los desvíos aproximadamente 1, c
 
 # ── 3. PCA y varianza explicada ───────────────────────────────────────────────
 st.markdown("---")
-st.markdown("## 3. Varianza explicada")
+st.markdown("## 3. Aplicación de PCA y varianza explicada")
+
+st.markdown("""
+Aplicamos PCA con todas las componentes posibles (4, una por variable)
+para observar cuánta varianza explica cada una antes de decidir cuántas
+retener. La varianza explicada por cada componente indica cuánta
+información del dataset original captura esa dimensión reducida.
+""")
 
 pca = PCA(n_components=4)
 X_pca = pca.fit_transform(X_scaled)
@@ -109,6 +117,19 @@ st.dataframe(resumen_pca, use_container_width=True, hide_index=True)
 
 # ── VIZ 1 — Scree plot ────────────────────────────────────────────────────────
 st.markdown("### Viz 1 · Varianza explicada por componente principal")
+
+st.markdown("""
+El scree plot muestra que las cuatro componentes principales explican
+proporciones casi idénticas de varianza: PC1 (25.4%), PC2 (25.2%),
+PC3 (24.8%) y PC4 (24.6%). La varianza acumulada crece de forma
+perfectamente lineal, sin ningún quiebre o codo visible.
+
+Este resultado confirma lo observado en la matriz de correlación del EDA:
+las cuatro variables no están correlacionadas entre sí, por lo que cada
+una aporta información independiente. PCA no encuentra ninguna dirección
+que concentre más información que las demás, y en consecuencia no permite
+una reducción de dimensionalidad sin pérdida significativa.
+""")
 
 componentes = [f"PC{i+1}" for i in range(4)]
 
@@ -136,16 +157,6 @@ fig1.legend(loc="upper right", bbox_to_anchor=(0.88, 0.88))
 plt.tight_layout()
 st.pyplot(fig1)
 plt.close(fig1)
-
-st.markdown("""
-**Interpretación:** Las cuatro componentes explican proporciones casi idénticas de varianza
-(≈25% cada una), con una curva acumulada perfectamente lineal y sin ningún codo visible.
-Este resultado confirma lo observado en la matriz de correlación del EDA: las variables
-no están correlacionadas entre sí, por lo que cada una aporta información independiente.
-PCA no encuentra ninguna dirección que concentre más información que las demás.
-Retener 2 componentes implicaría conservar solo el 50.6% de la información original,
-lo cual no representa una reducción útil en términos prácticos.
-""")
 
 # ── VIZ 2 — Loadings ──────────────────────────────────────────────────────────
 st.markdown("---")
@@ -178,27 +189,24 @@ plt.close(fig2)
 st.markdown("**Tabla de loadings completa**")
 st.dataframe(loadings.round(4), use_container_width=True)
 
-st.markdown("""
-**Interpretación:**
-
-**PC1** tiene cargas negativas en `age` y `monthly_watch_time_mins`, y cargas positivas
-en `customer_support_tickets` y `days_since_last_login`. PC1 puede interpretarse como
-una dimensión de actividad e involucramiento: valores bajos corresponden a usuarios
-jóvenes con alto consumo; valores altos a usuarios con más tickets y mayor tiempo
-sin ingresar.
-
-**PC2** muestra cargas positivas en `age` y `customer_support_tickets`, capturando
-una dimensión demográfica y de fricción técnica: usuarios mayores con más tickets
-reportados, independientemente de su actividad reciente.
-
-En ambos casos `monthly_watch_time_mins` tiene el loading más bajo en PC2,
-indicando que el tiempo de visualización es la variable que menos estructura aporta
-a las componentes principales.
-""")
-
 # ── 4. Interpretación general ─────────────────────────────────────────────────
 st.markdown("---")
 st.markdown("## 4. Interpretación general")
+
+st.markdown("""
+**PC1** puede interpretarse como una dimensión de actividad e involucramiento:
+valores bajos corresponden a usuarios más jóvenes con mayor consumo mensual,
+mientras que valores altos corresponden a usuarios con más tickets reportados
+y mayor tiempo sin ingresar.
+
+**PC2** captura principalmente la oposición entre edad y tickets de soporte
+contra el consumo mensual.
+
+El resultado más relevante del PCA no es la reducción de dimensionalidad
+en sí —que en este caso no es posible sin pérdida significativa—, sino
+la confirmación de que las cuatro variables aportan información
+independiente y complementaria sobre el usuario.
+""")
 
 st.info("""
 Las cuatro variables describen aspectos distintos e independientes del comportamiento
