@@ -3,21 +3,21 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
-# IDEs and editors
+# IDEs y editores
 .vscode/
 .idea/
 *.swp
 
-# Operating System files
+# Archivos del sistema operativo
 .DS_Store
 Thumbs.db
 
-# Environment variables / Secrets
+# Variables de entorno / Secretos
 .env
 .env.*
 !.env.example
 
-# Python test / coverage / cache
+# Pruebas de Python / cobertura / caché
 .pytest_cache/
 .coverage
 htmlcov/
