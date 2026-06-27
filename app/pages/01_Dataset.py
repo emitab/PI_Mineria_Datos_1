@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import os
 
 st.set_page_config(page_title="Dataset", page_icon="📁", layout="wide")
 
@@ -10,11 +11,13 @@ st.markdown("---")
 # ── Carga ─────────────────────────────────────────────────────────────────────
 @st.cache_data
 def cargar_raw():
-    return pd.read_json("../data/raw/streaming_users_dirty.json")
+    path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "raw", "streaming_users_dirty.json")
+    return pd.read_json(path)
 
 @st.cache_data
 def cargar_procesado():
-    return pd.read_json("../data/processed/streaming_users_processed.json")
+    path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "streaming_users_processed.json")
+    return pd.read_json(path)
 
 try:
     df_raw = cargar_raw()
@@ -151,7 +154,8 @@ st.markdown("---")
 st.markdown("## 4. Log ETL")
 
 try:
-    log = pd.read_csv("../logs/pipeline_log.csv")
+    path_log = os.path.join(os.path.dirname(__file__), "..", "..", "logs", "pipeline_log.csv")
+    log = pd.read_csv(path_log)
     st.dataframe(log, use_container_width=True, hide_index=True)
 except Exception:
     log_data = {

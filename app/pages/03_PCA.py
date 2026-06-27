@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+import os
 
 st.set_page_config(page_title="PCA", page_icon="🔷", layout="wide")
 
@@ -15,7 +16,8 @@ st.markdown("---")
 # ── Carga ─────────────────────────────────────────────────────────────────────
 @st.cache_data
 def cargar():
-    return pd.read_json("../data/processed/streaming_users_processed.json")
+    path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "streaming_users_processed.json")
+    return pd.read_json(path)
 
 try:
     df = cargar()
