@@ -1,7 +1,7 @@
 # 🎬 Proyecto Integrador — Minería de Datos 1
 
 Análisis de usuarios de una plataforma de streaming aplicando técnicas de Minería de Datos.
-
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://pimineriadatos1-rouuplmjugua9br6jmpzqv.streamlit.app/)
 ## 👥 Integrantes
 
 - Taboada, Emiliano Nicolás
