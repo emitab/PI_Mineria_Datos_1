@@ -178,4 +178,4 @@ with col_r2:
     """)
 
 st.markdown("---")
-st.caption("Taboada, Emiliano Nicolás · Pérez Carletti, Martín · Minería de Datos 1 · 2025")
+st.caption("Taboada, Emiliano Nicolás · Pérez Carletti, Martín · Minería de Datos 1")

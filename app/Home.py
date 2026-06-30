@@ -46,4 +46,4 @@ with col2:
     st.markdown("🔗 [Ver en GitHub](https://github.com/)")
 
 st.markdown("---")
-st.caption("Proyecto Integrador · Minería de Datos 1 · 2025")
+st.caption("Proyecto Integrador · Minería de Datos 1")
