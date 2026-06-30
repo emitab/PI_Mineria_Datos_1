@@ -43,7 +43,7 @@ with col2:
     - **Comisión:** Grupo 4
     """)
     st.markdown("### Repositorio")
-    st.markdown("🔗 [Ver en GitHub](https://github.com/)")
+    st.markdown("🔗 [Ver en GitHub](https://github.com/emitab/PI_Mineria_Datos_1)")
 
 st.markdown("---")
 st.caption("Proyecto Integrador · Minería de Datos 1")
